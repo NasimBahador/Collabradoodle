@@ -14,7 +14,7 @@ class UserManager(models.Manager):
 
         pw_hash = bcrypt.hashpw(request.POST['password'].encode(), bcrypt.gensalt())
 
-        user = self.create(first_name=request.POST['first_name'], last_name=request.POST['last_name'], email=request.POST['email'], pw_hash=pw_hash)
+        user = self.create(first_name=request.POST['first_name'], last_name=request.POST['last_name'], email=request.POST['email'], password=pw_hash)
 
         return (True, user)
 
@@ -22,7 +22,7 @@ class UserManager(models.Manager):
         try:
             user = User.objects.get(email=request.POST['email'])
             password = request.POST['password'].encode()
-            if bcrypt.hashpw(password, user.pw_hash.encode()):
+            if bcrypt.hashpw(password, user.password.encode()):
                 return (True, user)
 
         except ObjectDoesNotExist:
@@ -46,10 +46,20 @@ class UserManager(models.Manager):
 
 class DoodleManager(models.Manager):
     def post_doodle(self, request):
-        pass
-    def destroy_doodle(self, request):
-        pass
+        errors = []
 
+        if not request.POST['new_doodle']:
+            errors.append('Please write a Doodle!')
+
+        else:
+            creator = User.objects.get(id=request.session['user']['user_id'])
+            self.create(content=request.POST['new_doodle'], doodle_creator=creator)
+
+        return errors
+
+    def destroy_doodle(self, request, id):
+        putitin = Doodle.objects.filter(id=id).delete()
+        
 
 class User(models.Model):
     first_name = models.CharField(max_length = 50)
